@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Evaluador de vitamina D3</title>
+  <style>
+    :root{
+      /* Medical blue background */
+      --bg1:#e9f4ff;
+      --bg2:#dbeeff;
+      --bg3:#cfe8ff;
+      --txt:#0b1220;
+      --muted:rgba(11,18,32,.72);
+
+      /* Pink glass accents */
+      --pink1: rgba(255, 70, 170, .18);
+      --pink2: rgba(255, 140, 210, .12);
+      --pink3: rgba(255, 70, 170, .08);
+      --pinkBorder: rgba(255, 105, 180, .26);
+      --pinkGlow: 0 0 0 1px rgba(255, 105, 180, .14), 0 18px 55px rgba(11,18,32,.18);
+
+      --line:rgba(11,18,32,.10);
+      --line2:rgba(11,18,32,.16);
+
+      --radius:22px;
+      --radius2:16px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--txt);
+      min-height:100vh;
+      padding:28px 16px;
+
+      background:
+        radial-gradient(900px 620px at 12% 6%, rgba(255,105,180,.10), transparent 65%),
+        radial-gradient(820px 620px at 92% 10%, rgba(255,140,210,.08), transparent 70%),
+        radial-gradient(1000px 900px at 50% 115%, rgba(0,140,255,.10), transparent 70%),
+        linear-gradient(180deg, var(--bg1), var(--bg2) 40%, var(--bg3)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='none' stroke='%230b1220' stroke-opacity='.08' stroke-width='2'%3E%3Cg transform='translate(35 38) rotate(-15)'%3E%3Crect x='0' y='0' rx='18' ry='18' width='92' height='36'/%3E%3Cline x1='46' y1='0' x2='46' y2='36'/%3E%3C/g%3E%3Cg transform='translate(285 38)'%3E%3Crect x='0' y='20' width='54' height='86' rx='10'/%3E%3Crect x='10' y='0' width='34' height='26' rx='8'/%3E%3Cline x1='10' y1='52' x2='44' y2='52'/%3E%3C/g%3E%3Cg transform='translate(55 285)'%3E%3Ccircle cx='24' cy='24' r='12'/%3E%3Cg%3E%3Cline x1='24' y1='0' x2='24' y2='10'/%3E%3Cline x1='24' y1='38' x2='24' y2='48'/%3E%3Cline x1='0' y1='24' x2='10' y2='24'/%3E%3Cline x1='38' y1='24' x2='48' y2='24'/%3E%3Cline x1='7' y1='7' x2='14' y2='14'/%3E%3Cline x1='34' y1='34' x2='41' y2='41'/%3E%3Cline x1='34' y1='14' x2='41' y2='7'/%3E%3Cline x1='7' y1='41' x2='14' y2='34'/%3E%3C/g%3E%3C/g%3E%3Cg transform='translate(312 292)'%3E%3Cpath d='M18 2 C18 2 6 18 6 28 a12 12 0 0 0 24 0 C30 18 18 2 18 2z'/%3E%3C/g%3E%3Cg transform='translate(195 195)'%3E%3Crect x='14' y='0' width='14' height='42' rx='4'/%3E%3Crect x='0' y='14' width='42' height='14' rx='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-blend-mode: normal, normal, normal, normal, multiply;
+    }
+
+    .wrap{max-width:1040px;margin:0 auto}
+
+    .top{
+      display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;
+      margin-bottom:18px;
+    }
+    .title{display:flex;flex-direction:column;gap:6px;}
+    .title h1{margin:0;font-size:26px;letter-spacing:.35px;color:#0b1220;}
+    .title p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.35;max-width:860px;}
+
+    .badgeRow{display:flex;gap:10px;flex-wrap:wrap}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      background:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.50));
+      border:1px solid rgba(11,18,32,.10);
+      padding:8px 10px;border-radius:999px;
+      font-family:var(--mono);
+      font-size:12px;
+      color:rgba(11,18,32,.88);
+      box-shadow: 0 10px 24px rgba(11,18,32,.10);
+      backdrop-filter: blur(8px);
+    }
+
+    .card{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.46)),
+        radial-gradient(820px 520px at 15% 8%, var(--pink2), transparent 60%),
+        radial-gradient(820px 520px at 85% 18%, var(--pink3), transparent 65%);
+      border:1px solid rgba(255,105,180,.22);
+      box-shadow:var(--pinkGlow);
+      border-radius:var(--radius);
+      padding:18px;
+      backdrop-filter: blur(12px);
+    }
+
+    .grid{display:grid;grid-template-columns: 1.05fr .95fr;gap:14px;}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+    .controls{display:grid;gap:12px}
+    .field{
+      background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.35));
+      border:1px solid rgba(255,105,180,.18);
+      border-radius:var(--radius2);
+      padding:14px;
+      box-shadow: 0 0 0 1px rgba(255,105,180,.05) inset;
+      backdrop-filter: blur(10px);
+    }
+    .field label{
+      display:flex;align-items:center;justify-content:space-between;
+      font-size:12px;color:rgba(11,18,32,.70);letter-spacing:.3px;text-transform:uppercase;
+      margin-bottom:10px;
+    }
+    .field .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    input[type="number"]{
+      flex:1;min-width:150px;
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(11,18,32,.14);
+      color:#0b1220;
+      padding:12px 12px;border-radius:14px;outline:none;
+      font-weight:900;font-size:16px;letter-spacing:.2px;
+      box-shadow: 0 0 0 1px rgba(255,105,180,.06) inset;
+    }
+    input[type="number"]::placeholder{color:rgba(11,18,32,.35)}
+    select{
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(11,18,32,.14);
+      color:#0b1220;
+      padding:12px 10px;border-radius:14px;outline:none;
+      font-weight:800;
+      box-shadow: 0 0 0 1px rgba(255,105,180,.06) inset;
+    }
+    .btns{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      border:1px solid rgba(255,105,180,.26);
+      background:rgba(255,255,255,.55);
+      color:#0b1220;
+      padding:10px 12px;border-radius:14px;
+      cursor:pointer;
+      font-weight:900;letter-spacing:.2px;
+      transition:transform .15s ease, background .15s ease, box-shadow .15s ease;
+      user-select:none;
+      box-shadow: 0 8px 18px rgba(11,18,32,.10);
+    }
+    .btn:hover{
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.75);
+      box-shadow: 0 10px 22px rgba(11,18,32,.12);
+    }
+    .hint{color:rgba(11,18,32,.70);font-size:12.5px;line-height:1.35;margin:0;}
+
+    .scaleWrap{
+      background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.35));
+      border:1px solid rgba(255,105,180,.18);
+      border-radius:var(--radius2);
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 0 0 1px rgba(255,105,180,.05) inset;
+      backdrop-filter: blur(10px);
+    }
+    .scaleWrap::before{
+      content:"";
+      position:absolute;inset:-1px;
+      background:
+        radial-gradient(420px 260px at 20% 10%, rgba(255,70,170,.10), transparent 60%),
+        radial-gradient(420px 260px at 80% 20%, rgba(255,140,210,.08), transparent 65%);
+      pointer-events:none;
+    }
+    .scaleTitle{
+      position:relative;
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:12px;
+      gap:12px;flex-wrap:wrap;
+    }
+    .scaleTitle .left{display:flex;flex-direction:column;gap:4px;}
+    .scaleTitle .left b{font-size:13px;letter-spacing:.3px;color:#0b1220}
+    .scaleTitle .left span{font-size:12px;color:rgba(11,18,32,.70)}
+    .statusPill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(255,105,180,.26);
+      background:rgba(255,255,255,.60);
+      font-weight:900;
+      font-family:var(--mono);
+      font-size:12px;
+      color:#0b1220;
+      white-space:nowrap;
+      box-shadow: 0 8px 18px rgba(11,18,32,.10);
+    }
+
+    /* ✅ BAR: stops aligned to real thresholds (0,20,30,50,100,120) */
+    .bar{
+      position:relative;
+      height:18px;border-radius:999px;
+      border:1px solid rgba(11,18,32,.14);
+      background:
+        linear-gradient(90deg,
+          rgba(255,70,70,.55) 0%,
+          rgba(255,70,70,.55) 16.6667%,
+
+          rgba(255,170,70,.55) 16.6667%,
+          rgba(255,170,70,.55) 25%,
+
+          rgba(90,220,140,.55) 25%,
+          rgba(90,220,140,.55) 41.6667%,
+
+          rgba(120,210,255,.50) 41.6667%,
+          rgba(120,210,255,.50) 83.3333%,
+
+          rgba(200,120,255,.45) 83.3333%,
+          rgba(200,120,255,.45) 100%
+        );
+      overflow:hidden;
+    }
+    .bar::after{
+      content:"";
+      position:absolute;inset:0;
+      background:linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.00));
+      pointer-events:none;
+    }
+    /* ✅ Vertical guides at 20/30/50/100 */
+    .bar::before{
+      content:"";
+      position:absolute;inset:0;
+      background:
+        linear-gradient(90deg, transparent 0%, transparent 16.55%, rgba(11,18,32,.18) 16.55%, rgba(11,18,32,.18) 16.78%, transparent 16.78%, transparent 100%),
+        linear-gradient(90deg, transparent 0%, transparent 24.88%, rgba(11,18,32,.18) 24.88%, rgba(11,18,32,.18) 25.12%, transparent 25.12%, transparent 100%),
+        linear-gradient(90deg, transparent 0%, transparent 41.55%, rgba(11,18,32,.18) 41.55%, rgba(11,18,32,.18) 41.78%, transparent 41.78%, transparent 100%),
+        linear-gradient(90deg, transparent 0%, transparent 83.20%, rgba(11,18,32,.18) 83.20%, rgba(11,18,32,.18) 83.46%, transparent 83.46%, transparent 100%);
+      mix-blend-mode: multiply;
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    /* Marker */
+    .marker{
+      position:absolute;
+      top:0;
+      transform:translateX(-50%);
+      width:0;height:0;
+      pointer-events:none;
+      z-index:3;
+    }
+    .marker .arrow{
+      position:absolute;
+      top:-10px;
+      left:0;
+      transform:translateX(-50%);
+      width:0;height:0;
+      border-left:9px solid transparent;
+      border-right:9px solid transparent;
+      border-top:14px solid rgba(11,18,32,.88);
+      filter: drop-shadow(0 10px 14px rgba(11,18,32,.22));
+    }
+    .marker .stem{
+      position:absolute;
+      top:4px;
+      left:0;
+      transform:translateX(-50%);
+      width:2px;height:34px;
+      background:rgba(11,18,32,.80);
+      border-radius:999px;
+      box-shadow:0 10px 18px rgba(11,18,32,.18);
+    }
+    .marker .bubble{
+      position:absolute;
+      top:-60px;
+      left:0;
+      transform:translateX(-50%);
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(255,105,180,.22);
+      border-radius:14px;
+      padding:10px 10px;
+      min-width:170px;
+      text-align:center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 14px 28px rgba(11,18,32,.14);
+    }
+    .marker .bubble b{
+      display:block;
+      font-family:var(--mono);
+      font-size:14px;
+      letter-spacing:.2px;
+      color:#0b1220;
+    }
+    .marker .bubble small{
+      display:block;
+      margin-top:3px;
+      color:rgba(11,18,32,.70);
+      font-size:11.5px;
+      line-height:1.25;
+    }
+
+    /* ✅ TICKS: proportional, not evenly spaced */
+    .ticks{
+      position:relative;
+      height:16px;
+      margin-top:10px;
+      font-family:var(--mono);
+      font-size:11px;
+      color:rgba(11,18,32,.70);
+      user-select:none;
+    }
+    .tick{
+      position:absolute;
+      top:0;
+      transform:translateX(-50%);
+      white-space:nowrap;
+    }
+    .tick.first{transform:none;left:0!important;}
+    .tick.last{transform:translateX(-100%);left:100%!important;}
+
+    .ranges{position:relative;display:grid;gap:8px;margin-top:12px;}
+    .range{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(11,18,32,.10);
+      background:rgba(255,255,255,.55);
+      box-shadow: 0 10px 22px rgba(11,18,32,.10);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      margin-top:4px;
+      background:rgba(255,105,180,.85);
+      box-shadow:0 0 0 4px rgba(255,105,180,.12);
+      flex:0 0 auto;
+    }
+    .range b{font-size:13px;color:#0b1220}
+    .range span{display:block;color:rgba(11,18,32,.72);font-size:12.5px;line-height:1.25;margin-top:2px}
+    .range ul{margin:8px 0 0 18px;padding:0;color:rgba(11,18,32,.80);font-size:12.5px;line-height:1.35;}
+    .range li{margin:4px 0}
+
+    .foot{
+      margin-top:14px;
+      color:rgba(11,18,32,.70);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .foot code{font-family:var(--mono);font-size:11.5px}
+
+    .authorBar{
+      margin-top:14px;
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid rgba(11,18,32,.10);
+      background:rgba(255,255,255,.55);
+      box-shadow: 0 10px 22px rgba(11,18,32,.10);
+      backdrop-filter: blur(10px);
+    }
+    .authorBar b{font-family:var(--mono);letter-spacing:.15px;font-size:12.5px;color:#0b1220;}
+    .authorBar span{color:rgba(11,18,32,.70);font-size:12.5px;}
+
+    /* Floating buttons */
+    .floatDock{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      z-index:9999;
+    }
+    .fab{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(11,18,32,.12);
+      background:rgba(255,255,255,.78);
+      color:#0b1220;
+      text-decoration:none;
+      font-weight:900;
+      letter-spacing:.2px;
+      transition:transform .15s ease, background .15s ease, box-shadow .15s ease;
+      user-select:none;
+      max-width: 290px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 42px rgba(11,18,32,.18);
+    }
+    .fab:hover{
+      transform:translateY(-2px);
+      background:rgba(255,255,255,.92);
+      box-shadow: 0 18px 48px rgba(11,18,32,.22);
+    }
+    .fab .ico{
+      width:36px;height:36px;
+      border-radius:12px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,105,180,.25);
+      background:rgba(255,105,180,.10);
+      font-family:var(--mono);
+      font-weight:900;
+      color:#0b1220;
+    }
+    .fab .txt{line-height:1.05}
+    .fab small{
+      display:block;
+      font-weight:700;
+      color:rgba(11,18,32,.70);
+      margin-top:2px;
+      font-size:11px;
+      letter-spacing:.1px;
+    }
+    @media (max-width:420px){
+      .fab{padding:12px 12px}
+      .fab .txt{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>Evaluador de vitamina D3</h1>
+        <p>
+          Ingresa tu resultado de <b>25-OH-Vitamina D</b> y la flecha se posiciona en la escala (de menor a mayor).
+          Clasificación educativa basada en rangos clínicos comunes (pueden variar por guía/laboratorio).
+        </p>
+      </div>
+      <div class="badgeRow">
+        <div class="badge">Unidad: <span id="unitBadge">ng/mL</span></div>
+        <div class="badge">Rango mostrado: 0–120</div>
+        <div class="badge">Marcador dinámico</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+
+        <!-- Left: Controls -->
+        <div class="controls">
+          <div class="field">
+            <label>
+              <span>Resultado</span>
+              <span style="font-family:var(--mono);color:rgba(11,18,32,.78)">Ej: 20</span>
+            </label>
+            <div class="row">
+              <input id="vitd" type="number" inputmode="decimal" step="0.1" min="0" max="200" placeholder="20" value="20" />
+              <select id="unit">
+                <option value="ng" selected>ng/mL</option>
+                <option value="nmol">nmol/L</option>
+              </select>
+            </div>
+            <p class="hint" style="margin-top:10px">
+              Tip: si tu laboratorio reporta en <b>nmol/L</b>, cambia la unidad y se convierte automáticamente.
+            </p>
+            <div class="btns" style="margin-top:12px">
+              <button class="btn" id="demoLow">Demo: 12</button>
+              <button class="btn" id="demoMid">Demo: 26</button>
+              <button class="btn" id="demoOk">Demo: 38</button>
+              <button class="btn" id="demoHigh">Demo: 80</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Interpretación</span>
+              <span style="font-family:var(--mono);color:rgba(11,18,32,.78)" id="interpShort">—</span>
+            </label>
+            <p class="hint" id="interpLong" style="margin:0"></p>
+          </div>
+
+          <div class="authorBar">
+            <div>
+              <b>Autor</b><br />
+              <span>CEO de PRO EHN</span>
+            </div>
+            <div style="text-align:right">
+              <b id="authorName">Raúl Vargas</b><br />
+              <span style="font-family:var(--mono)">2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Scale -->
+        <div class="scaleWrap">
+          <div class="scaleTitle">
+            <div class="left">
+              <b>Escala visual (0 → 120 ng/mL)</b>
+              <span>La flecha se mueve según tu valor (convertido internamente a ng/mL).</span>
+            </div>
+            <div class="statusPill" id="statusPill">Estado: —</div>
+          </div>
+
+          <div class="bar" id="bar">
+            <div class="marker" id="marker" style="left:16.7%;">
+              <div class="bubble">
+                <b id="bubbleVal">20 ng/mL</b>
+                <small id="bubbleNote">Deficiencia / insuficiencia / óptimo…</small>
+              </div>
+              <div class="arrow"></div>
+              <div class="stem"></div>
+            </div>
+          </div>
+
+          <!-- ✅ proportional ticks -->
+          <div class="ticks" aria-label="Ticks escala vitamina D">
+            <span class="tick first" style="left:0%">0</span>
+            <span class="tick" style="left:16.6667%">20</span>
+            <span class="tick" style="left:25%">30</span>
+            <span class="tick" style="left:41.6667%">50</span>
+            <span class="tick" style="left:83.3333%">100</span>
+            <span class="tick last" style="left:100%">120</span>
+          </div>
+
+          <!-- Ranges + Symptoms -->
+          <div class="ranges">
+            <div class="range">
+              <div class="dot"></div>
+              <div>
+                <b>Deficiencia</b>
+                <span><b>&lt; 20 ng/mL</b> ( &lt; 50 nmol/L )</span>
+                <ul>
+                  <li>Fatiga y baja energía (frecuente, no específico).</li>
+                  <li>Dolor óseo o muscular, debilidad.</li>
+                  <li>Mayor riesgo de osteomalacia/osteopenia y fracturas (si se sostiene).</li>
+                  <li>Calambres o molestias musculares; peor rendimiento físico en algunos casos.</li>
+                  <li>En deficiencias marcadas: PTH puede elevarse y empeorar salud ósea.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="range">
+              <div class="dot"></div>
+              <div>
+                <b>Insuficiencia relativa / subóptimo</b>
+                <span><b>20–30 ng/mL</b> (50–75 nmol/L)</span>
+                <ul>
+                  <li>Puede haber cansancio, mialgias leves o recuperación lenta (variable).</li>
+                  <li>Función muscular subóptima en algunos pacientes.</li>
+                  <li>En personas con riesgo óseo/metabólico puede no ser el rango ideal.</li>
+                  <li>Frecuente “zona gris”: depende de contexto clínico y objetivo.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="range">
+              <div class="dot"></div>
+              <div>
+                <b>Óptimo / suficiente</b>
+                <span><b>30–50 ng/mL</b> (75–125 nmol/L)</span>
+                <ul>
+                  <li>Generalmente se asocia a mejor estado óseo y menor PTH (si calcio adecuado).</li>
+                  <li>Mejor función muscular y rendimiento en algunos perfiles.</li>
+                  <li>“Sweet spot” clínico habitual: más no siempre significa mejor.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="range">
+              <div class="dot"></div>
+              <div>
+                <b>Alto (generalmente seguro, depende del caso)</b>
+                <span><b>50–100 ng/mL</b> (125–250 nmol/L)</span>
+                <ul>
+                  <li>Muchas personas no obtienen beneficios adicionales claros por encima de 50.</li>
+                  <li>Si se alcanza por suplementación: vigilar dosis y tiempo.</li>
+                  <li>Si hay calcio alto o síntomas, considerar evaluación médica.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="range">
+              <div class="dot"></div>
+              <div>
+                <b>Riesgo de toxicidad</b>
+                <span><b>&gt; 100–150 ng/mL</b> ( &gt; 250–375 nmol/L )</span>
+                <ul>
+                  <li>Náusea, vómito, estreñimiento, sed intensa (posible hipercalcemia).</li>
+                  <li>Poliuria, debilidad, confusión, arritmias (en casos severos).</li>
+                  <li>Riesgo de hipercalciuria, litiasis renal y daño renal si sostenido.</li>
+                  <li>Si estás aquí por suplementación: suspender y valorar clínicamente.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="foot">
+            Nota: conversión estándar <code>1 ng/mL = 2.5 nmol/L</code>. La barra limita visualmente a 0–120 ng/mL (si ingresas más, se ajusta al máximo).
+            <br />
+            Importante: los “síntomas” son <b>orientativos</b> y no diagnósticos (muchos son inespecíficos).
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating buttons -->
+  <div class="floatDock" aria-label="Contactos flotantes">
+    <a class="fab" href="https://wa.me/5218132216529" target="_blank" rel="noopener">
+      <div class="ico">WA</div>
+      <div class="txt">WhatsApp<small>+52 1 813 221 6529</small></div>
+    </a>
+
+    <a class="fab" href="https://www.instagram.com/raulvargas_proehn/" target="_blank" rel="noopener">
+      <div class="ico">IG</div>
+      <div class="txt">Instagram<small>@raulvargas_proehn</small></div>
+    </a>
+  </div>
+
+  <script>
+    // --- Utils ---
+    const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+    const toNg = (value, unit) => {
+      const v = Number(value);
+      if (!isFinite(v)) return 0;
+      // nmol/L -> ng/mL  (divide by 2.5)
+      return unit === "nmol" ? v / 2.5 : v;
+    };
+    const toDisplay = (ng, unit) => (unit === "nmol" ? (ng * 2.5) : ng);
+
+    function classify(ng){
+      if (ng < 20) return {
+        pill:"Estado: DEFICIENCIA",
+        short:"Deficiencia",
+        note:"<20 ng/mL: suele considerarse deficiencia. Si hay síntomas o riesgo óseo/metabólico, conviene valoración y plan."
+      };
+      if (ng < 30) return {
+        pill:"Estado: INSUFICIENCIA",
+        short:"Insuficiencia relativa (subóptimo)",
+        note:"20–30 ng/mL: zona gris. Puede ser subóptimo según objetivos, composición corporal, riesgo óseo o exposición solar."
+      };
+      if (ng < 50) return {
+        pill:"Estado: ÓPTIMO",
+        short:"Óptimo / suficiente",
+        note:"30–50 ng/mL: rango óptimo habitual. Más no siempre significa mejor; depende de contexto y seguimiento."
+      };
+      if (ng <= 100) return {
+        pill:"Estado: ALTO",
+        short:"Alto (generalmente seguro)",
+        note:"50–100 ng/mL: alto. Si se alcanzó con suplementación, vigilar dosis, tiempo y calcio."
+      };
+      if (ng <= 150) return {
+        pill:"Estado: RIESGO",
+        short:"Riesgo de toxicidad (alto)",
+        note:">100 ng/mL: aumenta el riesgo de hipercalcemia/hipercalciuria si se mantiene. Recomendable revisión clínica."
+      };
+      return {
+        pill:"Estado: MUY ALTO",
+        short:"Muy alto (potencial toxicidad)",
+        note:"Valores muy elevados requieren atención clínica y revisión de suplementación (y evaluar calcio/PTH/función renal)."
+      };
+    }
+
+    // --- DOM ---
+    const vitd = document.getElementById("vitd");
+    const unit = document.getElementById("unit");
+    const unitBadge = document.getElementById("unitBadge");
+    const marker = document.getElementById("marker");
+    const bubbleVal = document.getElementById("bubbleVal");
+    const bubbleNote = document.getElementById("bubbleNote");
+    const statusPill = document.getElementById("statusPill");
+    const interpShort = document.getElementById("interpShort");
+    const interpLong = document.getElementById("interpLong");
+
+    const MIN = 0;
+    const MAX = 120; // visual scale in ng/mL
+
+    function update(){
+      const u = unit.value; // "ng" or "nmol"
+      unitBadge.textContent = (u === "nmol") ? "nmol/L" : "ng/mL";
+
+      const ng = toNg(vitd.value, u);
+
+      // marker uses the visual scale (0..120 ng/mL)
+      const ngClamped = clamp(ng, MIN, MAX);
+      const pct = (ngClamped - MIN) / (MAX - MIN);
+      marker.style.left = (pct * 100) + "%";
+
+      const cls = classify(ng);
+
+      // bubble shows the user's selected unit
+      const displayVal = toDisplay(ng, u);
+      const unitText = (u === "nmol") ? "nmol/L" : "ng/mL";
+      const pretty = (Math.round(displayVal * 10) / 10).toString();
+
+      bubbleVal.textContent = `${pretty} ${unitText}`;
+      bubbleNote.textContent = cls.short;
+
+      statusPill.textContent = cls.pill;
+      interpShort.textContent = cls.short;
+      interpLong.textContent = cls.note + " (Interpretación educativa; no sustituye valoración médica.)";
+    }
+
+    // Demo buttons (values are in ng/mL)
+    document.getElementById("demoLow").addEventListener("click", () => { unit.value="ng"; vitd.value=12; update(); });
+    document.getElementById("demoMid").addEventListener("click", () => { unit.value="ng"; vitd.value=26; update(); });
+    document.getElementById("demoOk").addEventListener("click", () => { unit.value="ng"; vitd.value=38; update(); });
+    document.getElementById("demoHigh").addEventListener("click", () => { unit.value="ng"; vitd.value=80; update(); });
+
+    vitd.addEventListener("input", update);
+    unit.addEventListener("change", update);
+
+    update();
+  </script>
+</body>
+</html>
